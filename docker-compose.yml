@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  microservice:
+    build: .
+    image: sidus_api
+    container_name: sidus_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    command: gunicorn --workers=4 -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker internal.main:app
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_USER=sidus
+      - POSTGRES_PASSWORD=sidus
+      - POSTGRES_DB=sidus
+
+  redis:
+    image: redis
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - ./redis/data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    expose:
+      - 6379
+    command: redis-server /usr/local/etc/redis/redis.conf --protected-mode no
+
+volumes:
+  postgres_data:
